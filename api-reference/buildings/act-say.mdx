@@ -1,0 +1,65 @@
+---
+title: Building Say
+description: Send a message in the context of a building
+---
+
+# Building Say
+
+Send a message in the context of a specific building. This is similar to the resident SAY action but is scoped to a building — useful for batteries and services that act on behalf of a building.
+
+## Endpoint
+
+```
+POST /v1/bldgs/:address/act
+```
+
+The `:address` parameter is the URI-encoded building address.
+
+## Request Body
+
+```json
+{
+  "action_type": "SAY",
+  "resident_email": "bot@example.com",
+  "bldg_url": "g/my-project",
+  "say_flr_url": "g/my-project/l0",
+  "say_speaker": "Assistant",
+  "say_text": "Task completed!",
+  "say_flr": "g/b(10,20)/l0",
+  "say_location": "g/b(10,20)/l0/b(5,6)"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `action_type` | string | Yes | Must be `"SAY"` |
+| `resident_email` | string | Yes | Email of the speaker |
+| `bldg_url` | string | Yes | URL of the building |
+| `say_flr_url` | string | Yes | Floor URL where the message is said |
+| `say_speaker` | string | Yes | Display name of the speaker |
+| `say_text` | string | Yes | Message content |
+| `say_flr` | string | No | Floor address |
+| `say_location` | string | No | Specific location address |
+| `say_recipient` | string | No | Target recipient |
+| `say_mimetype` | string | No | MIME type of message content |
+| `say_time` | integer | No | Unix timestamp |
+
+## Response
+
+```json
+{
+  "data": {
+    "address": "g/b(10,20)",
+    "name": "My Project",
+    "previous_messages": [
+      "{\"say_speaker\":\"Assistant\",\"say_text\":\"Task completed!\",\"say_time\":1700000000}"
+    ]
+  }
+}
+```
+
+## Notes
+
+- The message is stored in the building's `previous_messages` (last 10 kept)
+- If `say_text` starts with `/`, the message is broadcast as a command via PubSub
+- This endpoint is also used by batteries responding to messages

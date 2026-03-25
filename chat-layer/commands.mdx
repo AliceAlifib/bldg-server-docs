@@ -1,0 +1,112 @@
+---
+title: Built-in Commands
+description: Commands processed by BldgCommandExecutor
+---
+
+# Built-in Commands
+
+These commands are processed by the **BldgCommandExecutor** when a resident says them (SAY action with `/` prefix). The speaker must be an **owner** of the affected building(s) for the command to execute.
+
+## `/create`
+
+Create a new building on the speaker's current floor.
+
+```
+/create <entity_type> bldg with name <name>
+```
+
+Optional parameters (space-separated after `name`):
+
+```
+/create problem bldg with name My Project web_url https://example.com summary A great project category Engineering picture_url https://img.example.com/pic.png state approved
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `name` | Building display name (required) |
+| `web_url` | External web URL |
+| `summary` | Description text |
+| `category` | Category name |
+| `picture_url` | Image URL |
+| `data_url` | Data URL |
+| `state` | State string (e.g., "approved") |
+
+The building is created at the speaker's current location. If a building already exists at those coordinates, the system retries with a random offset.
+
+After creation, a `/notify bldg_created` callback is broadcast.
+
+## `/move bldg`
+
+Move a building to the speaker's current location.
+
+```
+/move bldg <name> here
+```
+
+The building (looked up by name on the speaker's floor) is relocated to the speaker's (x, y) position.
+
+## `/relocate bldg`
+
+Relocate a building by its URL.
+
+```
+/relocate bldg <bldg_url> here
+```
+
+## `/connect between`
+
+Create a road between two buildings on the same floor.
+
+```
+/connect between <name1> and <name2>
+```
+
+Both buildings must exist on the speaker's floor. The speaker must own both buildings.
+
+## `/add owner`
+
+Add an owner to a building.
+
+```
+/add owner <email> to bldg <name>
+```
+
+The speaker must already be an owner of the building.
+
+## `/remove owner`
+
+Remove an owner from a building.
+
+```
+/remove owner <email> from bldg <name>
+```
+
+## `/promote bldg`
+
+Promote a building's picture as the wallpaper of its container.
+
+```
+/promote bldg <name> inside
+```
+
+Sets the building's picture URL as the `promoted-inside-N-picture-url` in the container's `data` field.
+
+## `/demote bldg`
+
+Remove a promoted building's wallpaper.
+
+```
+/demote bldg <name> inside
+```
+
+## Authorization
+
+All commands check that the `say_speaker`'s email (the resident performing the SAY action) is in the `owners` array of the affected building. If the speaker is not an owner, the command is silently ignored.
+
+## Notification Callbacks
+
+After certain commands execute, a notification message is broadcast:
+
+- `/notify bldg_created` — after a building is created via `/create`
+
+These notifications can be picked up by batteries for further processing.

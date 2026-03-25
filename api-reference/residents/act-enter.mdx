@@ -1,0 +1,97 @@
+---
+title: Enter Building
+description: Enter a composite building or a specific floor
+---
+
+# Enter Building
+
+Move a resident inside a composite building. There are two variants:
+
+- **ENTER_BLDG** — enter a building's default floor (l0)
+- **ENTER_BLDG_FLR** — enter a specific floor inside a building
+
+## Endpoint
+
+```
+POST /v1/residents/act
+```
+
+## ENTER_BLDG
+
+Enter a building and land on floor 0 at position (0, 0).
+
+### Request Body
+
+```json
+{
+  "resident_email": "alice@example.com",
+  "action_type": "ENTER_BLDG",
+  "bldg_address": "g/b(10,20)",
+  "bldg_url": "g/my-project"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resident_email` | string | Yes | Email of the resident |
+| `action_type` | string | Yes | Must be `"ENTER_BLDG"` |
+| `bldg_address` | string | Yes | Address of the building to enter |
+| `bldg_url` | string | Yes | URL of the building to enter |
+
+### Response
+
+The resident's position is updated:
+- `flr` → `g/b(10,20)/l0`
+- `flr_url` → `g/my-project/l0`
+- `location` → `g/b(10,20)/l0`
+- `x` → 0, `y` → 0
+
+```json
+{
+  "data": {
+    "email": "alice@example.com",
+    "flr": "g/b(10,20)/l0",
+    "flr_url": "g/my-project/l0",
+    "location": "g/b(10,20)/l0",
+    "x": 0,
+    "y": 0
+  }
+}
+```
+
+## ENTER_BLDG_FLR
+
+Enter a specific floor with a target position.
+
+### Request Body
+
+```json
+{
+  "resident_email": "alice@example.com",
+  "action_type": "ENTER_BLDG_FLR",
+  "bldg_address": "g/b(10,20)",
+  "bldg_url": "g/my-project",
+  "flr_level": 1,
+  "post_enter_x": 3,
+  "post_enter_y": 5
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resident_email` | string | Yes | Email of the resident |
+| `action_type` | string | Yes | Must be `"ENTER_BLDG_FLR"` |
+| `bldg_address` | string | Yes | Address of the building to enter |
+| `bldg_url` | string | Yes | URL of the building to enter |
+| `flr_level` | integer | Yes | Floor level number to enter |
+| `post_enter_x` | integer | Yes | Target x coordinate on the floor |
+| `post_enter_y` | integer | Yes | Target y coordinate on the floor |
+
+### Response
+
+The resident's position is updated to the specified floor and coordinates, and `nesting_depth` is incremented.
+
+## Notes
+
+- The building must be composite (`is_composite: true`) to be entered
+- Entering a building increases the resident's `nesting_depth`

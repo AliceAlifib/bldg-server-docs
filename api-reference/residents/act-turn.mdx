@@ -1,0 +1,46 @@
+---
+title: Turn
+description: Change a resident's facing direction
+---
+
+# Turn
+
+Change the direction a resident is facing.
+
+## Endpoint
+
+```
+POST /v1/residents/act
+```
+
+## Request Body
+
+```json
+{
+  "resident_email": "alice@example.com",
+  "action_type": "TURN",
+  "turn_direction": 90
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resident_email` | string | Yes | Email of the resident |
+| `action_type` | string | Yes | Must be `"TURN"` |
+| `turn_direction` | integer | Yes | New facing direction |
+
+## Response
+
+```json
+{
+  "data": {
+    "id": 1,
+    "email": "alice@example.com",
+    "name": "Alice",
+    "direction": 90,
+    "location": "g/b(10,20)/l0/b(5,3)",
+    "x": 5,
+    "y": 3
+  }
+}
+```

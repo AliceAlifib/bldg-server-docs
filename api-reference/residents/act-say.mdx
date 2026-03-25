@@ -1,0 +1,67 @@
+---
+title: Say
+description: Send a message or execute a command
+---
+
+# Say
+
+Send a message as a resident. If the message starts with `/`, it is broadcast as a command and processed by the [chat layer](/chat-layer/overview).
+
+## Endpoint
+
+```
+POST /v1/residents/act
+```
+
+## Request Body
+
+```json
+{
+  "resident_email": "alice@example.com",
+  "action_type": "SAY",
+  "say_speaker": "Alice",
+  "say_text": "Hello everyone!",
+  "say_flr": "g/b(10,20)/l0",
+  "say_location": "g/b(10,20)/l0/b(0,0)"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resident_email` | string | Yes | Email of the resident |
+| `action_type` | string | Yes | Must be `"SAY"` |
+| `say_speaker` | string | Yes | Display name of the speaker |
+| `say_text` | string | Yes | Message content |
+| `say_flr` | string | No | Floor where the message is said |
+| `say_location` | string | No | Specific location address |
+| `say_recipient` | string | No | Target recipient (for direct messages) |
+| `say_mimetype` | string | No | MIME type of the message content |
+| `say_time` | integer | No | Unix timestamp (auto-set if omitted) |
+
+## Response
+
+```json
+{
+  "data": {
+    "id": 1,
+    "email": "alice@example.com",
+    "name": "Alice",
+    "previous_messages": [
+      "{\"say_speaker\":\"Alice\",\"say_text\":\"Hello everyone!\",\"say_time\":1700000000}"
+    ]
+  }
+}
+```
+
+## Command Broadcasting
+
+If `say_text` starts with `/`, the message is broadcast via PubSub to:
+
+1. **BldgCommandExecutor** — processes built-in commands like `/create`, `/move bldg`, `/connect`
+2. **BatteryChatDispatcher** — forwards the message to any batteries attached on the same floor
+
+See [Chat Commands](/chat-layer/commands) for the full list of built-in commands.
+
+## Message Storage
+
+The message is JSON-encoded and appended to the resident's `previous_messages` array. Only the last 10 messages are kept.

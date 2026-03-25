@@ -1,0 +1,172 @@
+---
+title: Building a Battery
+description: Step-by-step guide to creating a battery service
+---
+
+# Building a Battery
+
+This guide walks through creating a battery — an external service that attaches to a building and responds to chat messages.
+
+## Overview
+
+A battery is any HTTP server that:
+
+1. Registers itself with bldg-server
+2. Attaches to a building
+3. Receives messages via webhook POST
+4. Responds by calling back into the bldg-server API
+
+## Step 1: Create Your Webhook Server
+
+Your server needs a single POST endpoint that receives chat messages:
+
+```javascript
+// Express.js example
+app.post('/webhook', (req, res) => {
+  const message = req.body;
+  console.log(`${message.say_speaker}: ${message.say_text}`);
+
+  // Process the message...
+
+  res.sendStatus(200);
+});
+```
+
+The incoming payload looks like:
+
+```json
+{
+  "action_type": "SAY",
+  "resident_email": "user@example.com",
+  "say_speaker": "Alice",
+  "say_text": "Hello battery!",
+  "say_flr": "g/b(10,20)/l0",
+  "say_flr_url": "g/my-project/l0",
+  "say_location": "g/b(10,20)/l0/b(5,6)",
+  "say_time": 1700000000
+}
+```
+
+## Step 2: Register Your Battery Type
+
+Tell bldg-server about your battery type and where to send messages:
+
+```bash
+curl -X POST https://bldg-server.fly.dev/v1/batteries/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "battery": {
+      "battery_type": "my-assistant",
+      "callback_url": "https://my-service.example.com/webhook"
+    }
+  }'
+```
+
+## Step 3: Create a Building for Your Battery
+
+Create a building entity to represent the battery in the world:
+
+```bash
+curl -X POST https://bldg-server.fly.dev/v1/bldgs/build \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entity": {
+      "address": "g/b(10,20)/l0/b(3,3)",
+      "bldg_url": "g/my-project/l0/assistant",
+      "flr": "g/b(10,20)/l0",
+      "name": "my-assistant",
+      "entity_type": "battery",
+      "x": 3,
+      "y": 3
+    }
+  }'
+```
+
+Note: The building's `name` field should match your `battery_type`.
+
+## Step 4: Attach to the Building
+
+Attach your battery to the building you just created:
+
+```bash
+curl -X POST https://bldg-server.fly.dev/v1/batteries/attach \
+  -H "Content-Type: application/json" \
+  -d '{
+    "battery": {
+      "bldg_url": "g/my-project/l0/assistant",
+      "flr": "g/b(10,20)/l0",
+      "callback_url": "https://my-service.example.com/webhook",
+      "battery_type": "my-assistant",
+      "battery_version": "1.0",
+      "battery_vendor": "your-name"
+    }
+  }'
+```
+
+## Step 5: Respond to Messages
+
+When your webhook receives a message, respond by calling the bldg-server API. The most common response is a SAY action:
+
+```javascript
+app.post('/webhook', async (req, res) => {
+  const message = req.body;
+
+  // Only respond to non-command messages
+  if (message.say_text.startsWith('/')) {
+    return res.sendStatus(200);
+  }
+
+  // Process and generate a response
+  const response = await generateResponse(message.say_text);
+
+  // Say the response back
+  await fetch('https://bldg-server.fly.dev/v1/residents/act', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      resident_email: 'bot@example.com',
+      action_type: 'SAY',
+      say_speaker: 'Assistant',
+      say_text: response,
+      say_flr: message.say_flr,
+      say_location: message.say_location
+    })
+  });
+
+  res.sendStatus(200);
+});
+```
+
+## Step 6: Use Commands
+
+Your battery can also execute commands by sending SAY messages with `/` prefix:
+
+```javascript
+// Create a sub-building
+await fetch('https://bldg-server.fly.dev/v1/residents/act', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    resident_email: 'bot@example.com',
+    action_type: 'SAY',
+    say_speaker: 'Assistant',
+    say_text: '/create stage bldg with name Design Phase',
+    say_flr: 'g/b(10,20)/l0',
+    say_location: 'g/b(10,20)/l0/b(3,3)'
+  })
+});
+```
+
+## Cleanup
+
+To remove your battery:
+
+1. **Detach** from the building: `POST /v1/batteries/detach`
+2. **Unregister** the callback: `POST /v1/batteries/unregister`
+
+## Tips
+
+- Always return `200` from your webhook quickly — do heavy processing asynchronously
+- Check `say_text` for `/` prefix to avoid responding to commands
+- Use `say_recipient` if your battery should only respond to direct messages
+- Set `direct_only: true` when attaching if you only want messages addressed to your battery's building

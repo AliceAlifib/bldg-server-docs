@@ -1,0 +1,55 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "bldg-server",
+  "navigation": [
+    { "group": "Getting Started", "pages": ["introduction"] },
+    {
+      "group": "Concepts",
+      "pages": [
+        "concepts/buildings",
+        "concepts/residents",
+        "concepts/floors",
+        "concepts/roads",
+        "concepts/batteries"
+      ]
+    },
+    {
+      "group": "Resident API",
+      "pages": [
+        "api-reference/residents/look",
+        "api-reference/residents/scan",
+        "api-reference/residents/act-move",
+        "api-reference/residents/act-turn",
+        "api-reference/residents/act-say",
+        "api-reference/residents/act-enter",
+        "api-reference/residents/act-exit"
+      ]
+    },
+    {
+      "group": "Building API",
+      "pages": [
+        "api-reference/buildings/look",
+        "api-reference/buildings/scan",
+        "api-reference/buildings/build",
+        "api-reference/buildings/act-say"
+      ]
+    },
+    {
+      "group": "Battery API",
+      "pages": [
+        "api-reference/batteries/register",
+        "api-reference/batteries/unregister",
+        "api-reference/batteries/attach",
+        "api-reference/batteries/detach"
+      ]
+    },
+    {
+      "group": "Chat Layer",
+      "pages": [
+        "chat-layer/overview",
+        "chat-layer/commands",
+        "chat-layer/building-battery"
+      ]
+    }
+  ]
+}

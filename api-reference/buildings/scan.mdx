@@ -1,0 +1,55 @@
+---
+title: Scan Floor
+description: Get all buildings recursively within a floor
+---
+
+# Scan Floor
+
+Get all buildings within a floor and all nested sub-floors, recursively.
+
+## Endpoint
+
+```
+GET /v1/bldgs/scan/:flr
+```
+
+The `:flr` parameter is the URI-encoded floor address.
+
+## Example Request
+
+```bash
+curl https://bldg-server.fly.dev/v1/bldgs/scan/g
+```
+
+## Response
+
+Returns an array of building objects (no wrapper), including the container and all descendants:
+
+```json
+[
+  {
+    "address": "g",
+    "name": "Ground",
+    "entity_type": "ground",
+    "is_composite": true
+  },
+  {
+    "address": "g/b(10,20)",
+    "name": "My Project",
+    "entity_type": "problem",
+    "is_composite": true
+  },
+  {
+    "address": "g/b(10,20)/l0/b(0,0)",
+    "name": "Design",
+    "entity_type": "stage",
+    "is_composite": true
+  }
+]
+```
+
+## Notes
+
+- Returns all buildings at every nesting level beneath the given floor
+- For large hierarchies, this can return many results
+- Use [look](/api-reference/buildings/look) if you only need the immediate floor

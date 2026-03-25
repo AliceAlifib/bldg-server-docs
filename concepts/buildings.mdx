@@ -1,0 +1,83 @@
+---
+title: Buildings
+description: The fundamental spatial unit in bldg-server
+---
+
+# Buildings
+
+Buildings are the core entity in bldg-server. Every piece of space — from the global ground to a nested room inside a project — is a building.
+
+## Address System
+
+Buildings use a hierarchical coordinate-based address system:
+
+| Address | Meaning |
+|---------|---------|
+| `g` | The global ground |
+| `g/b(10,20)` | Building at coordinates (10, 20) on the ground |
+| `g/b(10,20)/l0` | Floor 0 inside that building |
+| `g/b(10,20)/l0/b(5,6)` | A building at (5, 6) on that floor |
+
+The pattern is: `<parent>/<entity>` where entities are either `b(x,y)` for buildings or `l<n>` for floors.
+
+### URL System
+
+Parallel to the coordinate address, buildings also have a **bldg_url** — a human-readable name path:
+
+```
+g/my-project/l0/design-room
+```
+
+Both systems refer to the same building. Addresses are canonical; URLs are for display and lookup.
+
+## Entity Types
+
+Buildings have an `entity_type` that determines their visual appearance and behavior:
+
+| Type | Composite | Description |
+|------|-----------|-------------|
+| `ground` | Yes | The root container |
+| `problem` | Yes | A project or problem space |
+| `stage` | Yes | A workflow stage |
+| `milestone` | Yes | A project milestone |
+| `team` | Yes | A team space |
+| `sales` | Yes | A sales pipeline |
+| `storage` | Yes | A storage area |
+| `costs` | Yes | Cost tracking |
+| `inbox` | Yes | Inbox container |
+| `green-lot` | Yes | Positive signal lot |
+| `blue-lot` | Yes | Neutral signal lot |
+| `battery` | No | Represents an attached battery |
+| `member` | No | Represents a person |
+
+## Composite Buildings
+
+A **composite** building can contain floors, which in turn contain other buildings. When you create a composite building, floor 0 (`l0`) is automatically available inside it.
+
+```
+g/b(10,20)          <- composite building
+  └── l0            <- floor 0 (auto-created)
+       ├── b(0,0)   <- child building
+       └── b(5,3)   <- another child building
+```
+
+## Key Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | Unique hierarchical coordinate address |
+| `bldg_url` | string | Unique human-readable URL path |
+| `flr` | string | Address of the floor this building sits on |
+| `x`, `y` | integer | Position on the floor |
+| `entity_type` | string | Building type (see table above) |
+| `is_composite` | boolean | Whether it contains floors |
+| `name` | string | Display name |
+| `owners` | string[] | Emails of owners (used for authorization) |
+| `summary` | string | Description |
+| `web_url` | string | External web URL |
+| `data` | string | JSON metadata (floor heights, promoted pictures) |
+| `previous_messages` | string[] | Last 10 chat messages (JSON-encoded) |
+
+## Ownership
+
+Buildings have an `owners` array of email addresses. Ownership is checked when executing chat commands — only owners can modify a building via commands like `/move bldg` or `/add owner`.

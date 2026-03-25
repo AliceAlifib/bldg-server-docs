@@ -1,0 +1,59 @@
+---
+title: Exit Building
+description: Leave the current building and return to its container
+---
+
+# Exit Building
+
+Move a resident out of the building they are currently inside, returning them to the containing floor.
+
+## Endpoint
+
+```
+POST /v1/residents/act
+```
+
+## Request Body
+
+```json
+{
+  "resident_email": "alice@example.com",
+  "action_type": "EXIT_BLDG",
+  "bldg_address": "g/b(10,20)",
+  "bldg_url": "g/my-project",
+  "post_exit_x": 10,
+  "post_exit_y": 20
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resident_email` | string | Yes | Email of the resident |
+| `action_type` | string | Yes | Must be `"EXIT_BLDG"` |
+| `bldg_address` | string | Yes | Address of the building being exited |
+| `bldg_url` | string | Yes | URL of the building being exited |
+| `post_exit_x` | integer | Yes | Target x coordinate on the container floor |
+| `post_exit_y` | integer | Yes | Target y coordinate on the container floor |
+
+## Response
+
+The resident's position is updated to the container floor:
+
+```json
+{
+  "data": {
+    "email": "alice@example.com",
+    "flr": "g",
+    "location": "g/b(10,20)",
+    "x": 10,
+    "y": 20,
+    "nesting_depth": 0
+  }
+}
+```
+
+## Notes
+
+- The resident's `flr` is set to the container of the exited building
+- `nesting_depth` is decremented
+- `post_exit_x` and `post_exit_y` set where the resident appears on the container floor

@@ -1,0 +1,57 @@
+---
+title: Look at Floor
+description: Get residents on a specific floor
+---
+
+# Look at Floor
+
+Get all residents currently on a specific floor (direct children only, not recursive).
+
+## Endpoint
+
+```
+GET /v1/residents/look/:flr
+```
+
+The `:flr` parameter is the URI-encoded floor address.
+
+## Example Request
+
+```bash
+curl https://bldg-server.fly.dev/v1/residents/look/g
+```
+
+For nested floors, URI-encode the address:
+
+```bash
+curl https://bldg-server.fly.dev/v1/residents/look/g%2Fb(10%2C20)%2Fl0
+```
+
+## Response
+
+Returns an array of resident objects (no wrapper):
+
+```json
+[
+  {
+    "id": 1,
+    "email": "alice@example.com",
+    "name": "Alice",
+    "alias": "alice",
+    "home_bldg": "g/b(10,20)",
+    "location": "g/b(10,20)/l0/b(0,0)",
+    "flr": "g/b(10,20)/l0",
+    "flr_url": "g/my-project/l0",
+    "x": 0,
+    "y": 0,
+    "direction": 0,
+    "nesting_depth": 2,
+    "is_online": true
+  }
+]
+```
+
+## Notes
+
+- Returns only residents whose `flr` matches the given floor exactly
+- Does not include residents on nested sub-floors — use [scan](/api-reference/residents/scan) for recursive lookup

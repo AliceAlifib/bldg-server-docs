@@ -1,0 +1,50 @@
+---
+title: Roads
+description: Connections between buildings on the same floor
+---
+
+# Roads
+
+Roads are connections between two buildings on the same floor. They represent relationships, pathways, or visual links between entities.
+
+## Structure
+
+A road connects two buildings by their addresses and coordinates:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `flr` | string | The floor both buildings share |
+| `from_address` | string | Address of the source building |
+| `to_address` | string | Address of the destination building |
+| `from_x`, `from_y` | integer | Coordinates of the source |
+| `to_x`, `to_y` | integer | Coordinates of the destination |
+| `owners` | string[] | Emails of road owners |
+
+## Creating Roads
+
+Roads can be created in two ways:
+
+1. **Via API** — `POST /v1/roads` with the road parameters
+2. **Via chat command** — `/connect between <name1> and <name2>` (the speaker must own both buildings)
+
+## Querying Roads
+
+- `GET /v1/roads/look/:flr` — get roads on a specific floor (direct only)
+- `GET /v1/roads/scan/:flr` — get all roads recursively within a floor
+
+Both endpoints return an array of road objects (no wrapper).
+
+## Example
+
+```json
+{
+  "flr": "g/b(10,20)/l0",
+  "from_address": "g/b(10,20)/l0/b(0,0)",
+  "to_address": "g/b(10,20)/l0/b(5,3)",
+  "from_x": 0,
+  "from_y": 0,
+  "to_x": 5,
+  "to_y": 3,
+  "owners": ["alice@example.com"]
+}
+```

@@ -1,0 +1,51 @@
+---
+title: Introduction
+description: Welcome to the bldg-server documentation
+---
+
+# bldg-server
+
+bldg-server is a virtual office platform where **buildings**, **residents**, and **batteries** interact. It provides a spatial, hierarchical environment where people and AI agents can coexist, communicate, and extend functionality through a chat-driven command layer.
+
+## Core Ideas
+
+- **Buildings** are the fundamental spatial unit. They have addresses, coordinates, and can contain other buildings via floors — forming a recursive hierarchy.
+- **Residents** are the people and agents that inhabit buildings. They move, turn, enter/exit buildings, and communicate via SAY actions.
+- **Batteries** are external services that attach to buildings and extend their capabilities. They receive chat messages via webhooks and can respond with actions.
+- **Chat layer** ties everything together. Messages starting with `/` become commands that can create buildings, connect roads, and more.
+
+## API Base URL
+
+All endpoints are under `/v1/`:
+
+```
+https://bldg-server.fly.dev/v1/
+```
+
+## Quick Example
+
+Look at the buildings on the ground floor:
+
+```bash
+curl https://bldg-server.fly.dev/v1/bldgs/look/g
+```
+
+See which residents are online:
+
+```bash
+curl https://bldg-server.fly.dev/v1/residents/look/g
+```
+
+Have a resident say something:
+
+```bash
+curl -X POST https://bldg-server.fly.dev/v1/residents/act \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resident_email": "alice@example.com",
+    "action_type": "SAY",
+    "say_speaker": "Alice",
+    "say_text": "Hello, world!",
+    "say_flr": "g"
+  }'
+```

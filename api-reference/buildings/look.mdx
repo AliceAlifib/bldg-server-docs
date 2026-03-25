@@ -1,0 +1,57 @@
+---
+title: Look at Floor
+description: Get buildings on a specific floor
+---
+
+# Look at Floor
+
+Get all buildings on a specific floor (direct children only).
+
+## Endpoint
+
+```
+GET /v1/bldgs/look/:flr
+```
+
+The `:flr` parameter is the URI-encoded floor address.
+
+## Example Request
+
+```bash
+# Buildings on the ground
+curl https://bldg-server.fly.dev/v1/bldgs/look/g
+
+# Buildings inside a specific building's floor 0
+curl https://bldg-server.fly.dev/v1/bldgs/look/g%2Fb(10%2C20)%2Fl0
+```
+
+## Response
+
+Returns an array of building objects (no wrapper). The first element is the container building itself, followed by its children:
+
+```json
+[
+  {
+    "address": "g",
+    "name": "Ground",
+    "entity_type": "ground",
+    "is_composite": true
+  },
+  {
+    "address": "g/b(10,20)",
+    "bldg_url": "g/my-project",
+    "name": "My Project",
+    "entity_type": "problem",
+    "is_composite": true,
+    "x": 10,
+    "y": 20,
+    "flr": "g",
+    "owners": ["alice@example.com"]
+  }
+]
+```
+
+## Notes
+
+- The container building (the building that owns the floor) is included as the first element
+- Only returns direct children — use [scan](/api-reference/buildings/scan) for recursive lookup

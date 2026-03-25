@@ -1,0 +1,46 @@
+---
+title: Register
+description: Register a battery type's callback URL
+---
+
+# Register Battery
+
+Register a battery type and its callback URL in the global registry. This tells bldg-server where to send messages when a battery of this type is attached to a building.
+
+## Endpoint
+
+```
+POST /v1/batteries/register
+```
+
+## Request Body
+
+```json
+{
+  "battery": {
+    "battery_type": "my-assistant",
+    "callback_url": "https://my-service.example.com/webhook"
+  }
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `battery_type` | string | Yes | Unique name for this battery type |
+| `callback_url` | string | Yes | URL that will receive message webhooks |
+
+## Response
+
+```json
+{
+  "status": "registered",
+  "battery_type": "my-assistant",
+  "callback_url": "https://my-service.example.com/webhook"
+}
+```
+
+## Notes
+
+- Multiple callback URLs can be registered for the same battery type (for redundancy)
+- The registry is stored in Redis under `battery_registry:<battery_type>`
+- Registration is separate from attachment — you must also [attach](/api-reference/batteries/attach) the battery to a specific building

@@ -1,0 +1,73 @@
+---
+title: Build
+description: Create a building from an entity definition
+---
+
+# Build
+
+Create a new building from an entity definition. This is a higher-level alternative to `POST /v1/bldgs` that accepts an entity object.
+
+## Endpoint
+
+```
+POST /v1/bldgs/build
+```
+
+## Request Body
+
+```json
+{
+  "entity": {
+    "address": "g/b(15,25)",
+    "bldg_url": "g/new-project",
+    "flr": "g",
+    "name": "New Project",
+    "entity_type": "problem",
+    "is_composite": true,
+    "x": 15,
+    "y": 25,
+    "owners": ["alice@example.com"],
+    "summary": "A new project building",
+    "web_url": "https://example.com/project"
+  }
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | string | Yes | Hierarchical coordinate address |
+| `bldg_url` | string | Yes | Human-readable URL path |
+| `flr` | string | Yes | Floor this building sits on |
+| `name` | string | Yes | Display name |
+| `entity_type` | string | Yes | Building type |
+| `x`, `y` | integer | Yes | Position on the floor |
+| `is_composite` | boolean | No | Whether it can contain floors (default: false) |
+| `owners` | string[] | No | Owner email addresses |
+| `summary` | string | No | Description |
+| `web_url` | string | No | External URL |
+| `category` | string | No | Category name |
+| `picture_url` | string | No | Image URL |
+| `tags` | string[] | No | Tags |
+| `state` | string | No | State (e.g., "approved") |
+| `data` | string | No | JSON metadata |
+
+## Response
+
+```json
+{
+  "data": {
+    "id": 42,
+    "address": "g/b(15,25)",
+    "bldg_url": "g/new-project",
+    "name": "New Project",
+    "entity_type": "problem",
+    "is_composite": true,
+    "x": 15,
+    "y": 25,
+    "flr": "g",
+    "owners": ["alice@example.com"]
+  }
+}
+```
+
+Status: `201 Created`

@@ -1,0 +1,56 @@
+---
+title: Move
+description: Change a resident's position on the current floor
+---
+
+# Move
+
+Move a resident to a new (x, y) position on their current floor.
+
+## Endpoint
+
+```
+POST /v1/residents/act
+```
+
+## Request Body
+
+```json
+{
+  "resident_email": "alice@example.com",
+  "action_type": "MOVE",
+  "move_location": "g/b(10,20)/l0/b(5,3)",
+  "move_x": 5,
+  "move_y": 3
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resident_email` | string | Yes | Email of the resident to move |
+| `action_type` | string | Yes | Must be `"MOVE"` |
+| `move_location` | string | Yes | Target location address |
+| `move_x` | integer | Yes | Target x coordinate |
+| `move_y` | integer | Yes | Target y coordinate |
+
+## Response
+
+```json
+{
+  "data": {
+    "id": 1,
+    "email": "alice@example.com",
+    "name": "Alice",
+    "location": "g/b(10,20)/l0/b(5,3)",
+    "x": 5,
+    "y": 3,
+    "flr": "g/b(10,20)/l0",
+    "direction": 0
+  }
+}
+```
+
+## Notes
+
+- The resident stays on the same floor; only their position changes
+- The `move_location` should be a valid address on the resident's current floor

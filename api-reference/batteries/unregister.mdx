@@ -1,0 +1,46 @@
+---
+title: Unregister
+description: Remove a battery type's callback URL from the registry
+---
+
+# Unregister Battery
+
+Remove a callback URL from a battery type's registry entry.
+
+## Endpoint
+
+```
+POST /v1/batteries/unregister
+```
+
+## Request Body
+
+```json
+{
+  "battery": {
+    "battery_type": "my-assistant",
+    "callback_url": "https://my-service.example.com/webhook"
+  }
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `battery_type` | string | Yes | Battery type to unregister from |
+| `callback_url` | string | Yes | The specific callback URL to remove |
+
+## Response
+
+```json
+{
+  "status": "unregistered",
+  "battery_type": "my-assistant",
+  "callback_url": "https://my-service.example.com/webhook"
+}
+```
+
+## Notes
+
+- Only removes the specific callback URL, not the entire battery type
+- If other callback URLs are registered for the same type, they remain active
+- Does not affect any currently attached batteries — use [detach](/api-reference/batteries/detach) to remove an active attachment

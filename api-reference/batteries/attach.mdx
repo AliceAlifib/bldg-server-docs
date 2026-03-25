@@ -1,0 +1,65 @@
+---
+title: Attach
+description: Attach a battery to a building
+---
+
+# Attach Battery
+
+Attach a battery instance to a specific building. Once attached, the battery will receive chat messages from that building's floor via its callback URL.
+
+## Endpoint
+
+```
+POST /v1/batteries/attach
+```
+
+## Request Body
+
+```json
+{
+  "battery": {
+    "bldg_url": "g/my-project/l0/assistant",
+    "flr": "g/b(10,20)/l0",
+    "callback_url": "https://my-service.example.com/webhook",
+    "battery_type": "my-assistant",
+    "battery_version": "1.0",
+    "battery_vendor": "acme",
+    "direct_only": false
+  }
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `bldg_url` | string | Yes | URL of the building to attach to |
+| `flr` | string | Yes | Floor address |
+| `callback_url` | string | Yes | Webhook URL for receiving messages |
+| `battery_type` | string | No | Type identifier |
+| `battery_version` | string | No | Version string |
+| `battery_vendor` | string | No | Vendor name |
+| `direct_only` | boolean | No | If true, only receive directly addressed messages (default: false) |
+
+## Response
+
+```json
+{
+  "data": {
+    "id": 1,
+    "bldg_url": "g/my-project/l0/assistant",
+    "flr": "g/b(10,20)/l0",
+    "callback_url": "https://my-service.example.com/webhook",
+    "battery_type": "my-assistant",
+    "battery_version": "1.0",
+    "battery_vendor": "acme",
+    "is_attached": true,
+    "direct_only": false
+  }
+}
+```
+
+Status: `201 Created`
+
+## Constraints
+
+- **Only one battery can be attached to a building at a time.** Attempting to attach a second battery to the same building will fail with a constraint error.
+- The battery type must be [registered](/api-reference/batteries/register) first for message dispatching to work.

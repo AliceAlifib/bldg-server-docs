@@ -1,0 +1,74 @@
+---
+title: Chat Layer Overview
+description: How the command broadcasting system works
+---
+
+# Chat Layer Overview
+
+The chat layer is the command-and-control backbone of bldg-server. It turns chat messages into actions — creating buildings, connecting roads, and dispatching messages to batteries.
+
+## How It Works
+
+When a resident or building executes a SAY action with text starting with `/`, the message is broadcast via Phoenix PubSub:
+
+```
+SAY action with "/" prefix
+    │
+    ▼
+Phoenix.PubSub broadcast
+  topic: "chat"
+  event: "new_message"
+    │
+    ├──► BldgCommandExecutor
+    │    (processes built-in commands)
+    │
+    └──► BatteryChatDispatcher
+         (forwards to attached batteries)
+```
+
+## Message Format
+
+Every broadcast message has this structure:
+
+```json
+{
+  "action_type": "SAY",
+  "resident_email": "user@example.com",
+  "say_speaker": "Alice",
+  "say_text": "/create problem bldg with name My Project",
+  "say_flr": "g/b(10,20)/l0",
+  "say_flr_url": "g/my-project/l0",
+  "say_location": "g/b(10,20)/l0/b(5,6)",
+  "say_recipient": null,
+  "say_mimetype": "text/plain",
+  "say_time": 1700000000,
+  "bldg_url": "g/my-project"
+}
+```
+
+## Two Listeners
+
+### BldgCommandExecutor
+
+A GenServer that subscribes to the `"chat"` PubSub topic and processes built-in commands. It handles structural operations like creating buildings, connecting roads, and managing ownership.
+
+See [Commands](/chat-layer/commands) for the full list.
+
+### BatteryChatDispatcher
+
+A GenServer that routes messages to attached batteries. When a message arrives:
+
+1. Find all attached batteries on the message's floor
+2. Look up each battery's type
+3. Query Redis for registered callback URLs for that type
+4. POST the full message to a callback URL
+
+This is how batteries receive their input. See [Building a Battery](/chat-layer/building-battery) for details.
+
+## Non-Command Messages
+
+Messages that don't start with `/` are still stored in the speaker's `previous_messages`, but they are **not** broadcast via PubSub and are not processed by either listener.
+
+## Message Storage
+
+All SAY messages (commands or not) are stored in the `previous_messages` array of the resident or building that said them. Only the last 10 messages are retained.

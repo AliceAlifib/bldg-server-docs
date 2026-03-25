@@ -1,0 +1,55 @@
+---
+title: Scan Floor
+description: Get all residents recursively within a floor
+---
+
+# Scan Floor
+
+Get all residents within a floor and all of its nested sub-floors, recursively.
+
+## Endpoint
+
+```
+GET /v1/residents/scan/:flr
+```
+
+The `:flr` parameter is the URI-encoded floor address.
+
+## Example Request
+
+```bash
+curl https://bldg-server.fly.dev/v1/residents/scan/g
+```
+
+## Response
+
+Returns an array of resident objects (no wrapper):
+
+```json
+[
+  {
+    "id": 1,
+    "email": "alice@example.com",
+    "name": "Alice",
+    "flr": "g",
+    "x": 5,
+    "y": 3,
+    "is_online": true
+  },
+  {
+    "id": 2,
+    "email": "bob@example.com",
+    "name": "Bob",
+    "flr": "g/b(10,20)/l0",
+    "x": 0,
+    "y": 0,
+    "is_online": false
+  }
+]
+```
+
+## Notes
+
+- Returns residents at all nesting depths beneath the given floor
+- Useful for getting a complete picture of who is inside a building and all its sub-buildings
+- For large hierarchies, this may return many results — use [look](/api-reference/residents/look) if you only need the current floor

@@ -1,0 +1,83 @@
+---
+title: Batteries
+description: External services that extend buildings
+---
+
+# Batteries
+
+Batteries are external services that attach to buildings and extend their capabilities. They receive chat messages via webhooks and can respond with actions — making buildings interactive and programmable.
+
+## How Batteries Work
+
+The battery lifecycle has three phases:
+
+1. **Register** — declare a battery type and its callback URL in the global registry
+2. **Attach** — bind a battery instance to a specific building
+3. **Respond** — receive messages via HTTP POST, process them, and respond via the API
+
+## Registration
+
+Battery types are registered in a Redis-backed registry. Multiple callback URLs can be registered for the same type (for redundancy or load distribution).
+
+```bash
+curl -X POST https://bldg-server.fly.dev/v1/batteries/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "battery": {
+      "battery_type": "my-assistant",
+      "callback_url": "https://my-service.example.com/webhook"
+    }
+  }'
+```
+
+## Attachment
+
+Once registered, a battery is attached to a building. **Only one battery can be attached to a building at a time.**
+
+```bash
+curl -X POST https://bldg-server.fly.dev/v1/batteries/attach \
+  -H "Content-Type: application/json" \
+  -d '{
+    "battery": {
+      "bldg_url": "g/my-project/l0/assistant",
+      "flr": "g/b(10,20)/l0",
+      "callback_url": "https://my-service.example.com/webhook",
+      "battery_type": "my-assistant",
+      "battery_version": "1.0",
+      "battery_vendor": "acme"
+    }
+  }'
+```
+
+## Receiving Messages
+
+When someone says something (via SAY action) on a floor where a battery is attached, the **BatteryChatDispatcher** forwards the message to the battery's callback URL via HTTP POST.
+
+The battery receives the full message payload:
+
+```json
+{
+  "action_type": "SAY",
+  "resident_email": "user@example.com",
+  "say_speaker": "Alice",
+  "say_text": "Hello battery!",
+  "say_flr": "g/b(10,20)/l0",
+  "say_flr_url": "g/my-project/l0",
+  "say_location": "g/b(10,20)/l0/b(5,6)",
+  "say_time": 1700000000
+}
+```
+
+## Responding
+
+Batteries respond by calling back into the bldg-server API — typically using `POST /v1/residents/act` with a SAY action to send messages, or other endpoints to create buildings, move entities, etc.
+
+## The `direct_only` Flag
+
+When `direct_only` is set to `true` on an attached battery, it only receives messages that are directly addressed to the building it's attached to — not all messages on the floor.
+
+## Battery Entity Type
+
+When a battery is attached, a building with `entity_type: "battery"` is typically created to represent it visually. The building's `name` field contains the battery type.
+
+See the [Building a Battery](/chat-layer/building-battery) guide for a complete walkthrough.

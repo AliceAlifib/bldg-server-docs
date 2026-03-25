@@ -1,0 +1,36 @@
+---
+title: Detach
+description: Detach a battery from a building
+---
+
+# Detach Battery
+
+Detach the currently attached battery from a building. The battery will stop receiving messages.
+
+## Endpoint
+
+```
+POST /v1/batteries/detach
+```
+
+## Request Body
+
+```json
+{
+  "bldg_url": "g/my-project/l0/assistant"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `bldg_url` | string | Yes | URL of the building to detach the battery from |
+
+## Response
+
+Status: `204 No Content`
+
+## Notes
+
+- Finds the attached battery by `bldg_url` and deletes it
+- After detaching, the building can have a new battery attached to it
+- This does not unregister the battery type from the global registry — use [unregister](/api-reference/batteries/unregister) for that
