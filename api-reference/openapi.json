@@ -1,0 +1,667 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "bldg-server API",
+    "description": "API for the bldg-server virtual office platform — buildings, residents, batteries, and roads.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://bldg-server.fly.dev/v1"
+    }
+  ],
+  "paths": {
+    "/bldgs/look/{flr}": {
+      "get": {
+        "summary": "Look at floor (buildings)",
+        "description": "Get buildings on a specific floor (direct children only).",
+        "operationId": "bldgsLook",
+        "tags": ["Buildings"],
+        "parameters": [
+          {
+            "name": "flr",
+            "in": "path",
+            "required": true,
+            "description": "URI-encoded floor address (e.g., `g` or `g%2Fb(10%2C20)%2Fl0`)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of building objects (container first, then children)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Building" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bldgs/scan/{flr}": {
+      "get": {
+        "summary": "Scan floor (buildings)",
+        "description": "Get all buildings recursively within a floor.",
+        "operationId": "bldgsScan",
+        "tags": ["Buildings"],
+        "parameters": [
+          {
+            "name": "flr",
+            "in": "path",
+            "required": true,
+            "description": "URI-encoded floor address",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of building objects (container + all descendants)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Building" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bldgs/build": {
+      "post": {
+        "summary": "Build",
+        "description": "Create a building from an entity definition.",
+        "operationId": "bldgsBuild",
+        "tags": ["Buildings"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["entity"],
+                "properties": {
+                  "entity": { "$ref": "#/components/schemas/BuildingInput" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Building created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Building" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bldgs/{address}/act": {
+      "post": {
+        "summary": "Building say",
+        "description": "Send a message in the context of a building. If text starts with `/`, it is broadcast as a command.",
+        "operationId": "bldgsAct",
+        "tags": ["Buildings"],
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "URI-encoded building address",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SayAction" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated building",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Building" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/residents/look/{flr}": {
+      "get": {
+        "summary": "Look at floor (residents)",
+        "description": "Get residents on a specific floor (direct only).",
+        "operationId": "residentsLook",
+        "tags": ["Residents"],
+        "parameters": [
+          {
+            "name": "flr",
+            "in": "path",
+            "required": true,
+            "description": "URI-encoded floor address",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of resident objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Resident" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/residents/scan/{flr}": {
+      "get": {
+        "summary": "Scan floor (residents)",
+        "description": "Get all residents recursively within a floor.",
+        "operationId": "residentsScan",
+        "tags": ["Residents"],
+        "parameters": [
+          {
+            "name": "flr",
+            "in": "path",
+            "required": true,
+            "description": "URI-encoded floor address",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of resident objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Resident" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/residents/act": {
+      "post": {
+        "summary": "Resident action",
+        "description": "Perform a resident action: MOVE, TURN, SAY, ENTER_BLDG, ENTER_BLDG_FLR, or EXIT_BLDG.",
+        "operationId": "residentsAct",
+        "tags": ["Residents"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  { "$ref": "#/components/schemas/MoveAction" },
+                  { "$ref": "#/components/schemas/TurnAction" },
+                  { "$ref": "#/components/schemas/ResidentSayAction" },
+                  { "$ref": "#/components/schemas/EnterBldgAction" },
+                  { "$ref": "#/components/schemas/EnterBldgFlrAction" },
+                  { "$ref": "#/components/schemas/ExitBldgAction" }
+                ],
+                "discriminator": {
+                  "propertyName": "action_type"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated resident",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Resident" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batteries/register": {
+      "post": {
+        "summary": "Register battery",
+        "description": "Register a battery type's callback URL in the global registry.",
+        "operationId": "batteriesRegister",
+        "tags": ["Batteries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["battery"],
+                "properties": {
+                  "battery": {
+                    "type": "object",
+                    "required": ["battery_type", "callback_url"],
+                    "properties": {
+                      "battery_type": { "type": "string", "description": "Unique battery type name" },
+                      "callback_url": { "type": "string", "description": "Webhook URL for receiving messages" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registration confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "registered" },
+                    "battery_type": { "type": "string" },
+                    "callback_url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batteries/unregister": {
+      "post": {
+        "summary": "Unregister battery",
+        "description": "Remove a callback URL from a battery type's registry.",
+        "operationId": "batteriesUnregister",
+        "tags": ["Batteries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["battery"],
+                "properties": {
+                  "battery": {
+                    "type": "object",
+                    "required": ["battery_type", "callback_url"],
+                    "properties": {
+                      "battery_type": { "type": "string" },
+                      "callback_url": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unregistration confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "unregistered" },
+                    "battery_type": { "type": "string" },
+                    "callback_url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batteries/attach": {
+      "post": {
+        "summary": "Attach battery",
+        "description": "Attach a battery to a building. Only one battery per building.",
+        "operationId": "batteriesAttach",
+        "tags": ["Batteries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["battery"],
+                "properties": {
+                  "battery": { "$ref": "#/components/schemas/BatteryInput" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Battery attached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Battery" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batteries/detach": {
+      "post": {
+        "summary": "Detach battery",
+        "description": "Detach the attached battery from a building.",
+        "operationId": "batteriesDetach",
+        "tags": ["Batteries"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bldg_url"],
+                "properties": {
+                  "bldg_url": { "type": "string", "description": "URL of the building to detach from" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Battery detached" }
+        }
+      }
+    },
+    "/roads/look/{flr}": {
+      "get": {
+        "summary": "Look at floor (roads)",
+        "description": "Get roads on a specific floor.",
+        "operationId": "roadsLook",
+        "tags": ["Roads"],
+        "parameters": [
+          {
+            "name": "flr",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of road objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Road" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roads/scan/{flr}": {
+      "get": {
+        "summary": "Scan floor (roads)",
+        "description": "Get all roads recursively within a floor.",
+        "operationId": "roadsScan",
+        "tags": ["Roads"],
+        "parameters": [
+          {
+            "name": "flr",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of road objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Road" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Building": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "address": { "type": "string", "description": "Hierarchical coordinate address (e.g., g/b(10,20)/l0/b(5,6))" },
+          "bldg_url": { "type": "string", "description": "Human-readable URL path (e.g., g/my-project/l0/room)" },
+          "flr": { "type": "string", "description": "Floor address this building sits on" },
+          "flr_url": { "type": "string" },
+          "flr_level": { "type": "integer" },
+          "nesting_depth": { "type": "integer" },
+          "name": { "type": "string" },
+          "entity_type": { "type": "string", "description": "Building type: ground, problem, stage, milestone, team, sales, storage, costs, inbox, battery, member, etc." },
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "is_composite": { "type": "boolean" },
+          "web_url": { "type": "string" },
+          "state": { "type": "string" },
+          "category": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "summary": { "type": "string" },
+          "picture_url": { "type": "string" },
+          "owners": { "type": "array", "items": { "type": "string" } },
+          "previous_messages": { "type": "array", "items": { "type": "string" }, "description": "Last 10 chat messages (JSON-encoded)" },
+          "data": { "type": "string", "description": "JSON metadata (floor heights, promoted pictures)" }
+        }
+      },
+      "BuildingInput": {
+        "type": "object",
+        "required": ["address", "bldg_url", "flr", "name", "entity_type", "x", "y"],
+        "properties": {
+          "address": { "type": "string" },
+          "bldg_url": { "type": "string" },
+          "flr": { "type": "string" },
+          "name": { "type": "string" },
+          "entity_type": { "type": "string" },
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "is_composite": { "type": "boolean" },
+          "owners": { "type": "array", "items": { "type": "string" } },
+          "summary": { "type": "string" },
+          "web_url": { "type": "string" },
+          "category": { "type": "string" },
+          "picture_url": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "state": { "type": "string" },
+          "data": { "type": "string" }
+        }
+      },
+      "Resident": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "email": { "type": "string" },
+          "alias": { "type": "string" },
+          "name": { "type": "string" },
+          "home_bldg": { "type": "string" },
+          "is_online": { "type": "boolean" },
+          "location": { "type": "string" },
+          "flr": { "type": "string" },
+          "flr_url": { "type": "string" },
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "direction": { "type": "integer" },
+          "nesting_depth": { "type": "integer" },
+          "other_attributes": { "type": "object" },
+          "previous_messages": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "MoveAction": {
+        "type": "object",
+        "required": ["resident_email", "action_type", "move_location", "move_x", "move_y"],
+        "properties": {
+          "resident_email": { "type": "string" },
+          "action_type": { "type": "string", "enum": ["MOVE"] },
+          "move_location": { "type": "string" },
+          "move_x": { "type": "integer" },
+          "move_y": { "type": "integer" }
+        }
+      },
+      "TurnAction": {
+        "type": "object",
+        "required": ["resident_email", "action_type", "turn_direction"],
+        "properties": {
+          "resident_email": { "type": "string" },
+          "action_type": { "type": "string", "enum": ["TURN"] },
+          "turn_direction": { "type": "integer" }
+        }
+      },
+      "ResidentSayAction": {
+        "type": "object",
+        "required": ["resident_email", "action_type", "say_speaker", "say_text"],
+        "properties": {
+          "resident_email": { "type": "string" },
+          "action_type": { "type": "string", "enum": ["SAY"] },
+          "say_speaker": { "type": "string" },
+          "say_text": { "type": "string" },
+          "say_flr": { "type": "string" },
+          "say_location": { "type": "string" },
+          "say_recipient": { "type": "string" },
+          "say_mimetype": { "type": "string" },
+          "say_time": { "type": "integer" }
+        }
+      },
+      "EnterBldgAction": {
+        "type": "object",
+        "required": ["resident_email", "action_type", "bldg_address", "bldg_url"],
+        "properties": {
+          "resident_email": { "type": "string" },
+          "action_type": { "type": "string", "enum": ["ENTER_BLDG"] },
+          "bldg_address": { "type": "string" },
+          "bldg_url": { "type": "string" }
+        }
+      },
+      "EnterBldgFlrAction": {
+        "type": "object",
+        "required": ["resident_email", "action_type", "bldg_address", "bldg_url", "flr_level", "post_enter_x", "post_enter_y"],
+        "properties": {
+          "resident_email": { "type": "string" },
+          "action_type": { "type": "string", "enum": ["ENTER_BLDG_FLR"] },
+          "bldg_address": { "type": "string" },
+          "bldg_url": { "type": "string" },
+          "flr_level": { "type": "integer" },
+          "post_enter_x": { "type": "integer" },
+          "post_enter_y": { "type": "integer" }
+        }
+      },
+      "ExitBldgAction": {
+        "type": "object",
+        "required": ["resident_email", "action_type", "bldg_address", "bldg_url", "post_exit_x", "post_exit_y"],
+        "properties": {
+          "resident_email": { "type": "string" },
+          "action_type": { "type": "string", "enum": ["EXIT_BLDG"] },
+          "bldg_address": { "type": "string" },
+          "bldg_url": { "type": "string" },
+          "post_exit_x": { "type": "integer" },
+          "post_exit_y": { "type": "integer" }
+        }
+      },
+      "SayAction": {
+        "type": "object",
+        "required": ["action_type", "resident_email", "bldg_url", "say_flr_url", "say_speaker", "say_text"],
+        "properties": {
+          "action_type": { "type": "string", "enum": ["SAY"] },
+          "resident_email": { "type": "string" },
+          "bldg_url": { "type": "string" },
+          "say_flr_url": { "type": "string" },
+          "say_speaker": { "type": "string" },
+          "say_text": { "type": "string" },
+          "say_flr": { "type": "string" },
+          "say_location": { "type": "string" },
+          "say_recipient": { "type": "string" },
+          "say_mimetype": { "type": "string" },
+          "say_time": { "type": "integer" }
+        }
+      },
+      "Battery": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "bldg_url": { "type": "string" },
+          "flr": { "type": "string" },
+          "callback_url": { "type": "string" },
+          "is_attached": { "type": "boolean" },
+          "direct_only": { "type": "boolean" },
+          "battery_type": { "type": "string" },
+          "battery_version": { "type": "string" },
+          "battery_vendor": { "type": "string" }
+        }
+      },
+      "BatteryInput": {
+        "type": "object",
+        "required": ["bldg_url", "flr", "callback_url"],
+        "properties": {
+          "bldg_url": { "type": "string" },
+          "flr": { "type": "string" },
+          "callback_url": { "type": "string" },
+          "battery_type": { "type": "string" },
+          "battery_version": { "type": "string" },
+          "battery_vendor": { "type": "string" },
+          "direct_only": { "type": "boolean", "default": false }
+        }
+      },
+      "Road": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "flr": { "type": "string" },
+          "from_address": { "type": "string" },
+          "to_address": { "type": "string" },
+          "from_x": { "type": "integer" },
+          "from_y": { "type": "integer" },
+          "to_x": { "type": "integer" },
+          "to_y": { "type": "integer" },
+          "owners": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
