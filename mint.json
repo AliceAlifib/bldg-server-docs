@@ -15,6 +15,7 @@
         "concepts/buildings",
         "concepts/residents",
         "concepts/floors",
+        "concepts/visual-language",
         "concepts/roads",
         "concepts/batteries"
       ]

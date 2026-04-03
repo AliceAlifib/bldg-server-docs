@@ -32,7 +32,9 @@ Both systems refer to the same building. Addresses are canonical; URLs are for d
 
 ## Entity Types
 
-Buildings have an `entity_type` that determines their visual appearance and behavior:
+Buildings have an `entity_type` that describes their semantic meaning. The `entity_type` is purely semantic — it says **what** a building represents, not **how** it looks. Visual representation is defined separately by the container's [visual language](/concepts/visual-language).
+
+Built-in entity types:
 
 | Type | Composite | Description |
 |------|-----------|-------------|
@@ -76,6 +78,7 @@ g/b(10,20)          <- composite building
 | `summary` | string | Description |
 | `web_url` | string | External web URL |
 | `data` | string | JSON metadata (floor heights, promoted pictures) |
+| `visual_language` | object | Maps semantic entity types to visual representations (see [Visual Language](/concepts/visual-language)). Only set on composite buildings. |
 | `previous_messages` | string[] | Last 10 chat messages (JSON-encoded) |
 
 ## Ownership

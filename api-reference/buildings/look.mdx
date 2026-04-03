@@ -35,7 +35,8 @@ Returns an array of building objects (no wrapper). The first element is the cont
     "address": "g",
     "name": "Ground",
     "entity_type": "ground",
-    "is_composite": true
+    "is_composite": true,
+    "visual_language": "{\"problem\":{\"3d_object\":\"livingRoomTable\",\"flr_height\":\"1.08\",\"flr0_height\":\"1.11\"},\"milestone\":{\"3d_object\":\"gardenRoundTable\",\"flr_height\":\"0.63\",\"flr0_height\":\"0.0\"},\"task\":{\"3d_object\":\"pottedPlant\"}}"
   },
   {
     "address": "g/b(10,20)",
@@ -54,4 +55,5 @@ Returns an array of building objects (no wrapper). The first element is the cont
 ## Notes
 
 - The container building (the building that owns the floor) is included as the first element
+- The container's `visual_language` field (JSON-encoded string) tells the client how to render each child's `entity_type` — see [Visual Language](/concepts/visual-language)
 - Only returns direct children — use [scan](/api-reference/buildings/scan) for recursive lookup

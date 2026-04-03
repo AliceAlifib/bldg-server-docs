@@ -1,0 +1,89 @@
+---
+title: Visual Language
+description: How containers define the visual representation of their children
+---
+
+# Visual Language
+
+Visual language is the mapping between semantic entity types and their visual representation. It decouples **what a building represents** (its `entity_type`) from **how it looks** when rendered by a client.
+
+## Why Visual Language?
+
+Without visual language, the `entity_type` field serves double duty: it describes both the semantic meaning of a building (e.g., "milestone", "task") and implies a specific visual form. This couples building creators to visual decisions and makes it impossible for different containers to render the same semantic type differently.
+
+With visual language, a container defines how each entity type should appear within it. One container might render "milestone" as a round table, while another renders it as a tree.
+
+## Structure
+
+The `visual_language` field is a JSON object on **container (composite) buildings**. Each key is a semantic `entity_type`, and the value describes how to render it:
+
+```json
+{
+  "milestone": {
+    "3d_object": "gardenRoundTable",
+    "flr_height": "0.63",
+    "flr0_height": "0.0"
+  },
+  "task": {
+    "3d_object": "pottedPlant"
+  },
+  "team": {
+    "3d_object": "buildingWithStorefront",
+    "flr_height": "0.9",
+    "flr0_height": "0.05"
+  }
+}
+```
+
+Each entry can contain:
+
+| Key | Description |
+|-----|-------------|
+| `3d_object` | The name of the 3D object to use for rendering |
+| `flr_height` | Floor height for composite types (used for 3D vertical spacing) |
+| `flr0_height` | Ground floor height for composite types |
+
+- **`3d_object`** is always present and identifies the visual form. The protocol does not prescribe a specific set of 3D object names — these are defined by the client implementation (e.g., a Unity client maps them to prefabs).
+- **`flr_height`** and **`flr0_height`** are only present for composite entity types. They define the vertical spacing between floors inside that building type.
+
+## State Variants
+
+Entity types can have state-specific visual overrides using compound keys in the format `entity_type:state`:
+
+```json
+{
+  "delivery": {
+    "3d_object": "tree"
+  },
+  "delivery:late": {
+    "3d_object": "tree_late"
+  },
+  "delivery:on_track": {
+    "3d_object": "tree_on_track"
+  }
+}
+```
+
+When rendering a building, the client should:
+1. Look for `entity_type:state` in the visual language (exact match)
+2. Fall back to `entity_type` (base match)
+3. Fall back to a client-side default if no match is found
+
+## Default Visual Language
+
+When a new composite building is created without an explicit `visual_language`, the server assigns a default mapping. This default captures the standard visual representation for all built-in entity types.
+
+## How Clients Use It
+
+When a client calls [look](/api-reference/buildings/look) or [scan](/api-reference/buildings/scan), the first element in the response is the container building. The client reads the container's `visual_language` and uses it to resolve the visual form for each child building based on its `entity_type`.
+
+```
+1. GET /v1/bldgs/look/g
+2. Response[0] is the container (ground) with visual_language
+3. For each child in Response[1..n]:
+   a. Look up child.entity_type in container.visual_language
+   b. Use the "3d_object" value to select the visual form
+   c. If composite, use flr_height/flr0_height for floor spacing
+```
+
+Clients should implement a fallback for backward compatibility: if `visual_language` is `null` (e.g., from an older server or an existing building that hasn't been updated), the client can use its own built-in mapping.

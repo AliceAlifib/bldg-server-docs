@@ -35,7 +35,12 @@ The `nesting_depth` field on buildings and residents tracks how deep they are in
 
 ## Floor Heights
 
-Each entity type defines its own floor dimensions, stored in the building's `data` JSON field:
+Floor heights control the vertical spacing between floors inside composite buildings. They are defined in two places:
+
+1. **In the container's `visual_language`** — each composite entity type entry includes `flr_height` and `flr0_height` (see [Visual Language](/concepts/visual-language))
+2. **In the building's `data` field** — when a composite building is created, the server copies the floor heights from the visual language into the building's `data` JSON for direct access
+
+Default floor heights for built-in entity types:
 
 | Entity Type | `flr_height` | `flr0_height` |
 |-------------|-------------|---------------|
@@ -51,7 +56,7 @@ Each entity type defines its own floor dimensions, stored in the building's `dat
 | `costs` | 2.57 | 0.067 |
 | `inbox` | 2.57 | 0.067 |
 
-These values are used by visual clients (like the Unity WebGL client) to render the 3D environment correctly.
+These values are used by visual clients (like the Unity WebGL client) to render the 3D environment correctly. Custom visual languages can override these defaults per container.
 
 ## Navigating Floors
 
