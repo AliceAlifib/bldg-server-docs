@@ -57,6 +57,13 @@
         "chat-layer/commands",
         "chat-layer/building-battery"
       ]
+    },
+    {
+      "group": "Streaming",
+      "pages": [
+        "streaming/overview",
+        "streaming/floor-channel"
+      ]
     }
   ]
 }

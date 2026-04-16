@@ -1,0 +1,56 @@
+---
+title: Streaming Overview
+description: Real-time push of floor changes over WebSocket
+---
+
+# Streaming Overview
+
+bldg-server streams live changes — buildings, residents, and roads being created, updated, or deleted — to clients over a WebSocket connection. This removes the need to re-poll [`look`](/api-reference/buildings/look) or [`scan`](/api-reference/buildings/scan) to keep a view in sync.
+
+It is the push-based counterpart to the REST endpoints. Use REST to fetch initial state or make one-off reads; use streaming for anything that needs to stay live — a 3D visual client, a presence indicator, a dashboard.
+
+## Mental Model
+
+1. Open a WebSocket to the server.
+2. **Join a topic** of the form `floor:<address>` — for example `floor:g` or `floor:g/b(10,20)/l0`.
+3. Receive push events whenever something on that floor changes.
+4. Reconcile those events against a local copy of the floor state.
+
+The address format is the same one used by the REST `:flr` parameter — see [Floors](/concepts/floors).
+
+## Ancestor Broadcast
+
+Every mutation is broadcast to the target floor **and every ancestor floor**. A building created at `g/b(10,20)/l0/b(5,3)/l0` produces events on three topics:
+
+- `floor:g/b(10,20)/l0/b(5,3)/l0`
+- `floor:g/b(10,20)/l0`
+- `floor:g`
+
+This means a client doing a recursive [`scan`](/api-reference/buildings/scan) of an outer floor can subscribe to that outer topic and still see nested changes — no need to join one topic per descendant.
+
+## Event Catalog
+
+Nine events, three per entity type:
+
+| Entity | Created | Updated | Deleted |
+|--------|---------|---------|---------|
+| Building | `bldg_created` | `bldg_updated` | `bldg_deleted` |
+| Resident | `resident_created` | `resident_updated` | `resident_deleted` |
+| Road | `road_created` | `road_updated` | `road_deleted` |
+
+`*_created` and `*_updated` payloads carry the full record, in the same JSON shape the REST endpoints return. `*_deleted` payloads carry only `{ "id": <id> }` — clients must key their local state by `id` so a deleted event can be applied.
+
+Full payload shapes and the wire protocol live on the [Floor Channel](/streaming/floor-channel) page.
+
+## Initial State
+
+Joining a topic does not automatically send a snapshot. After `join` succeeds, send a `request_scan` message on the channel. The server replies with a `scan_result` containing `{ bldgs, residents, roads }` — identical in shape to what [`/v1/bldgs/scan`](/api-reference/buildings/scan), [`/v1/residents/scan`](/api-reference/residents/scan), and the roads scan endpoint return for the same floor. The container building is included as the first element of `bldgs`, matching [`look`](/api-reference/buildings/look).
+
+From then on, merge incoming push events into that snapshot.
+
+## When to Use Streaming vs. REST
+
+- **Streaming** — live views, presence, multi-user visualizations, anything that would otherwise poll on a timer.
+- **REST `look` / `scan`** — one-off reads, initial state when you don't want to open a socket, scripts and integrations that don't run a persistent connection.
+
+Both read paths return the same JSON shapes, so client code that handles one can handle the other.

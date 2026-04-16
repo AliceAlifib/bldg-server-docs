@@ -1,0 +1,130 @@
+---
+title: Floor Channel
+description: WebSocket wire protocol for real-time floor updates
+---
+
+# Floor Channel
+
+The Floor Channel is a Phoenix Channel that pushes live create/update/delete events for buildings, residents, and roads on a given floor.
+
+See [Streaming Overview](/streaming/overview) for the conceptual model. This page is the wire protocol.
+
+## Endpoint
+
+```
+wss://bldg-server.fly.dev/socket/websocket
+```
+
+The socket is currently anonymous — no token or connect params are required. Any client that can reach the server can connect and join any floor topic.
+
+## Topics
+
+Clients join topics of the form:
+
+```
+floor:<floor_address>
+```
+
+The address format is the same one used by REST `:flr` URL parameters:
+
+| Example topic | Meaning |
+|---------------|---------|
+| `floor:g` | The ground floor |
+| `floor:g/b(10,20)/l0` | Floor 0 inside the building at coordinates (10, 20) on the ground |
+| `floor:g/b(10,20)/l0/b(5,3)/l0` | A nested floor, two containers deep |
+
+No authorization check runs on join — any address is accepted.
+
+## Inbound Messages
+
+### `request_scan`
+
+Request a full snapshot of the joined floor. Takes no parameters.
+
+The server replies with a `scan_result` push:
+
+```json
+{
+  "bldgs": [ /* container building, then each child */ ],
+  "residents": [ /* residents on this floor */ ],
+  "roads": [ /* roads on this floor */ ]
+}
+```
+
+The first element of `bldgs` is the container building itself, matching the JSON returned by [`/v1/bldgs/look/:flr`](/api-reference/buildings/look). Individual records use the same field set as the REST endpoints.
+
+## Outbound Events
+
+The server pushes the following events to every joined client on a topic when the corresponding mutation happens.
+
+| Event | Payload |
+|-------|---------|
+| `bldg_created` | Full building record |
+| `bldg_updated` | Full building record |
+| `bldg_deleted` | `{ "id": <bldg_id> }` |
+| `resident_created` | Full resident record |
+| `resident_updated` | Full resident record |
+| `resident_deleted` | `{ "id": <resident_id> }` |
+| `road_created` | Full road record |
+| `road_updated` | Full road record |
+| `road_deleted` | `{ "id": <road_id> }` |
+
+### Record Shapes
+
+Building records carry the same fields the REST endpoints return, including `id`, `address`, `bldg_url`, `name`, `flr`, `flr_url`, `flr_level`, `nesting_depth`, `x`, `y`, `is_composite`, `entity_type`, `state`, `category`, `tags`, `summary`, `picture_url`, `owners`, `previous_messages`, `updated_at`, `data`, and `visual_language` (JSON-encoded string).
+
+Resident records include `id`, `email`, `alias`, `name`, `home_bldg`, `is_online`, `location`, `flr`, `flr_url`, `x`, `y`, `direction`, `previous_messages`, `other_attributes`, `nesting_depth`, `session_id`, `last_login_at`, and `updated_at`.
+
+Road records include `id`, `flr`, `from_address`, `to_address`, `from_x`, `from_y`, `to_x`, `to_y`, and `owners`.
+
+### Delete Semantics
+
+`*_deleted` events carry only `{ "id": <id> }` — the full record is **not** included. Clients must maintain a local map keyed by `id` so a delete event can locate and remove the entry.
+
+## Ancestor Broadcast
+
+Every mutation is broadcast to the target floor **and every ancestor floor**. The server derives ancestor topics by stripping the trailing `b(x,y)/lN` pair from the address, one hop at a time.
+
+A building created at `g/b(1,2)/l0/b(3,4)/l0` produces identical events on three topics:
+
+- `floor:g/b(1,2)/l0/b(3,4)/l0`
+- `floor:g/b(1,2)/l0`
+- `floor:g`
+
+A client that joined `floor:g` will therefore see every change under the ground, no matter how deeply nested. This mirrors the recursive behavior of [`scan`](/api-reference/buildings/scan).
+
+## Example Client
+
+Using the `phoenix` npm package:
+
+```javascript
+import { Socket } from "phoenix"
+
+const socket = new Socket("wss://bldg-server.fly.dev/socket/websocket")
+socket.connect()
+
+const channel = socket.channel("floor:g", {})
+
+channel.join()
+  .receive("ok", () => {
+    channel.push("request_scan", {})
+  })
+
+channel.on("scan_result", ({ bldgs, residents, roads }) => {
+  // initial snapshot
+})
+
+channel.on("bldg_created", (bldg) => { /* ... */ })
+channel.on("bldg_updated", (bldg) => { /* ... */ })
+channel.on("bldg_deleted", ({ id }) => { /* remove by id */ })
+
+channel.on("resident_created", (resident) => { /* ... */ })
+channel.on("resident_updated", (resident) => { /* ... */ })
+channel.on("resident_deleted", ({ id }) => { /* remove by id */ })
+
+channel.on("road_created", (road) => { /* ... */ })
+channel.on("road_updated", (road) => { /* ... */ })
+channel.on("road_deleted", ({ id }) => { /* remove by id */ })
+```
+
+Non-JS clients can use any Phoenix Channels library (or implement the [Phoenix Channels wire protocol](https://hexdocs.pm/phoenix/channels.html) directly).
