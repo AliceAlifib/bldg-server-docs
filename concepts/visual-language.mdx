@@ -7,6 +7,14 @@ description: How containers define the visual representation of their children
 
 Visual language is the mapping between semantic entity types and their visual representation. It decouples **what a building represents** (its `entity_type`) from **how it looks** when rendered by a client.
 
+<Info>
+This page describes the protocol's per-container **`visual_language` field**
+(the `entity_type → 3d_object` map carried on a building). It is distinct from
+the high-level dataset config file
+[`visual-language.json`](/datasets/visual-language-json), which the file-system
+battery *compiles down* into this field plus layout and road commands.
+</Info>
+
 ## Why Visual Language?
 
 Without visual language, the `entity_type` field serves double duty: it describes both the semantic meaning of a building (e.g., "milestone", "task") and implies a specific visual form. This couples building creators to visual decisions and makes it impossible for different containers to render the same semantic type differently.
