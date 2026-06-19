@@ -1,0 +1,142 @@
+---
+title: Layout Strategies
+description: How records are placed — flow layouts, container floors, and the fishbone
+---
+
+# Layout Strategies
+
+Layout controls *where* records are placed within their container. You set it per
+[hierarchy level](/datasets/visual-language-json#hierarchy-levels) via the
+`layout` object (plus a few related keys). Without a strategy, the battery uses
+the framework's default flow layout.
+
+## Default flow layout
+
+With no `layout.strategy`, records are placed in a simple flow within their
+container, spaced by `bldg_width`. Larger `bldg_width` spreads records apart;
+small values pack same-type siblings tightly.
+
+```json
+{ "bldg_width": 10 }
+```
+
+## Container floors (`container_flr`)
+
+A level can render as a **floor of its parent** instead of a separate building.
+Set `bldg_type: "container_flr"` and use `child_floor_mapping` to place each
+named child folder on a specific floor.
+
+```json
+{
+  "bldg_type": "container_flr",
+  "staging_flr": "l11",
+  "child_floor_mapping": { "Class-1": "l2", "Class-2": "l1", "Class-3": "l0" }
+}
+```
+
+This is useful for categorical levels (e.g. classes, tiers) that should stack as
+floors rather than spread across the ground.
+
+## The fishbone
+
+The fishbone renders a sequence of records along a vertical **spine**, with each
+record's children fanning off as diagonal **bones** — like a fish skeleton or a
+goal/milestone roadmap. It uses two cooperating strategies across two levels.
+
+```
+            ● enabler
+           /
+   ●──────●  milestone        ↑ spine top (away from the goal)
+           \
+            ● enabler
+   │
+   ●──────●  milestone
+           \
+            ● enabler
+   │
+   ▣  goal (spine bottom)      ↓ toward the goal
+```
+
+### `fishbone-spine`
+
+Lays the level's records in a vertical column. Step size scales with the number
+of records so a few spread out and many pack tight.
+
+```json
+{ "strategy": "fishbone-spine", "spine_length": 80, "min_step": 14, "spine_top": 30, "x": 0 }
+```
+
+| Param | Default | Meaning |
+|---|---|---|
+| `spine_length` | 80 | Total vertical span to fill |
+| `min_step` | 4 | Minimum gap between consecutive records |
+| `spine_top` | 25 | y of the first record |
+| `x` | 0 | x of every spine record |
+
+### `fishbone-branch`
+
+Fans each parent's children off the spine as a diagonal bone. Adjacent parents'
+bones alternate to opposite **sides** (x sign flips by parent order), while y
+marches in one consistent direction.
+
+```json
+{ "strategy": "fishbone-branch", "step": 2, "step_y": 2, "y_direction": 1, "fold_after": 5 }
+```
+
+| Param | Default | Meaning |
+|---|---|---|
+| `step` | 2 | x distance per step along the bone |
+| `step_y` | `abs(step)` | y distance per step |
+| `y_direction` | `1` | Which way bones extend in y. `1` = **away from the goal** (toward the spine top), so each milestone reads as an arrowhead pointing at the goal |
+| `fold_after` | 7 | Flip the x sign after N children so long bones stay bounded |
+
+<Warning>
+`fishbone-branch` needs the spine to be laid out **first** (it anchors each bone
+at its parent's spine position) and the branch level should set
+[`flatten_to_root`](#flatten-to-root) so its records sit on the same floor as the
+spine. Keep the spine `min_step` larger than a bone's maximum y reach
+(`step_y × fold_after`) so adjacent bones don't collide.
+</Warning>
+
+## `flatten_to_root`
+
+Normally a record is laid out inside its parent container. With
+`flatten_to_root: true` on a level, those records are promoted to be **direct
+children of the dataset root** for layout — so they sit on the same floor as the
+spine and render at the same scale, rather than as tiny objects nested inside
+their parent.
+
+Their original parent is preserved as a *logical* parent, so:
+
+- the **fishbone-branch** strategy can still group each bone under its milestone, and
+- [`connections`](/datasets/visual-language-json#connections) rules using
+  `parent-children-chain` still match parent → children correctly.
+
+```json
+{
+  "layout": { "strategy": "fishbone-branch", "step": 2, "step_y": 2 },
+  "flatten_to_root": true
+}
+```
+
+## Putting it together
+
+A classic goal → milestones → enablers roadmap:
+
+```json
+"hierarchy_levels": [
+  {
+    "bldg_width": 10,
+    "layout": { "strategy": "fishbone-spine", "spine_length": 80, "min_step": 14, "spine_top": 30 }
+  },
+  {
+    "bldg_width": 5,
+    "layout": { "strategy": "fishbone-branch", "step": 2, "step_y": 2, "y_direction": 1, "fold_after": 5 },
+    "flatten_to_root": true
+  }
+]
+```
+
+Pair this with `connections` that chain the spine (`sibling-sequence` over
+milestones) and the bones (`parent-children-chain` from milestone to enablers) —
+see the [config reference](/datasets/visual-language-json#connections).

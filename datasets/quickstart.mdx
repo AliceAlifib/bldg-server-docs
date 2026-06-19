@@ -1,0 +1,87 @@
+---
+title: Quickstart
+description: Render a folder of data as a 3D scene in a few minutes
+---
+
+# Quickstart
+
+This walks through visualizing a tiny dataset with the file-system battery.
+
+<Steps>
+  <Step title="Arrange your data as a folder">
+    Each leaf folder is one record and needs a `raw-attributes.json` (the full
+    record) and a `semantic-attributes.json` (its type + display name). Parent
+    folders group records.
+
+    ```
+    my-dataset/
+    ├── 001_alpha/
+    │   ├── raw-attributes.json        {"id": "a", "score": 12}
+    │   └── semantic-attributes.json   {"entity-type": "task", "name": "Alpha", "status": "done"}
+    └── 002_beta/
+        ├── raw-attributes.json        {"id": "b", "score": 7}
+        └── semantic-attributes.json   {"entity-type": "task", "name": "Beta", "status": "blocked"}
+    ```
+  </Step>
+
+  <Step title="Describe the visualization">
+    Add a single `visual-language.json` at the dataset root. Map your entity
+    types to 3D objects, and (optionally) turn an attribute into a color.
+
+    ```json my-dataset/visual-language.json
+    {
+      "entity_types": { "task": "name" },
+      "attribute_visual_mappings": {
+        "status->color": { "done": "green", "blocked": "red" }
+      }
+    }
+    ```
+
+    `"task": "name"` renders each task as the `name` 3D object (a street sign).
+    See the [reference](/datasets/visual-language-json) for every option.
+  </Step>
+
+  <Step title="Run the battery">
+    With the file-system battery attached to a building, address it from chat:
+
+    ```
+    /file-system-battery visualize /path/to/my-dataset
+    ```
+
+    The battery walks the folder and emits the `/create`, `/relocate`, and
+    `/connect` commands to render the scene. Open the floor in a client (or the
+    [Floor Channel](/streaming/overview)) to watch it build.
+  </Step>
+
+  <Step title="Iterate live (optional)">
+    Use `watch` instead of `visualize` and the battery keeps the scene in sync
+    as you edit the folder — added/removed/changed records push incremental
+    updates.
+
+    ```
+    /file-system-battery watch /path/to/my-dataset
+    ```
+  </Step>
+</Steps>
+
+## Trigger command reference
+
+The battery registers as `file-system-battery` and responds when addressed by
+its type:
+
+| Command | Effect |
+|---|---|
+| `/file-system-battery visualize <folder>` | Render the folder once |
+| `/file-system-battery visualize` | Render the bundled sample dataset |
+| `/file-system-battery watch <folder>` | Render, then live-sync on folder edits |
+
+## What next
+
+<CardGroup cols={2}>
+  <Card title="Folder structure" icon="folder-tree" href="/datasets/folder-structure">
+    Containers, leaves, path identity, entity-containers.
+  </Card>
+  <Card title="visual-language.json" icon="file-code" href="/datasets/visual-language-json">
+    Layouts, detail panels, attribute colors, roads.
+  </Card>
+</CardGroup>

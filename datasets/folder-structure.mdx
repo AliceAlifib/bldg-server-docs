@@ -1,0 +1,130 @@
+---
+title: Folder Structure
+description: The dataset folder contract — leaves, containers, and per-record files
+---
+
+# Folder Structure
+
+A dataset is an ordinary folder tree. The file-system battery interprets it with
+a small, predictable set of rules.
+
+## Leaves vs. containers
+
+- **A leaf is a data record.** Any folder that contains a `raw-attributes.json`
+  is a record and becomes one building in the scene.
+- **A parent folder is a container.** Any folder that has child folders groups
+  them. Containers become composite buildings (or floors — see
+  [layouts](/datasets/layouts)).
+
+```
+dataset/
+├── 001_group-a/            ← container
+│   ├── 010_record-1/       ← leaf (has raw-attributes.json)
+│   └── 011_record-2/       ← leaf
+└── 002_group-b/            ← container
+    └── 020_record-3/       ← leaf
+```
+
+<Tip>
+Prefix folder names with a zero-padded index (e.g. `001_`, `002_`) to control
+ordering — the battery walks children in sorted order, and that order drives
+spines, chains, and flow layouts.
+</Tip>
+
+## Per-record files
+
+Each leaf (and optionally each container) can carry these files:
+
+| File | Required | Purpose |
+|---|---|---|
+| `raw-attributes.json` | **Yes** (marks a leaf) | The full source record. Available to detail panels and can be attached to the building's `data` field. |
+| `semantic-attributes.json` | Recommended | The record's `entity-type`, display `name`, and any attributes used by mappings/panels. |
+| `visual-attributes.json` | Optional | Direct visual overrides (e.g. `color`, `state`) that win over derived mappings. |
+
+### `raw-attributes.json`
+
+The verbatim record. Its presence is what makes a folder a leaf.
+
+```json
+{ "id": "en-20", "name": "Feedback capture", "status": "done", "assignees": ["udi"] }
+```
+
+### `semantic-attributes.json`
+
+Carries the type and label, plus any fields you want to drive visuals.
+
+```json
+{ "entity-type": "enabler", "name": "Feedback capture", "status": "done" }
+```
+
+- `entity-type` selects the 3D object via [`entity_types`](/datasets/visual-language-json#entity-types).
+  If missing, it defaults to `name` (a street sign).
+- `name` is the human label (shown as the building's `summary`). Falls back to
+  `raw-attributes.json`'s `Name`, then the folder name.
+
+### `visual-attributes.json`
+
+Per-record overrides that take precedence over
+[`attribute_visual_mappings`](/datasets/visual-language-json#attribute-visual-mappings).
+
+```json
+{ "color": "purple" }
+```
+
+## Root-as-entity
+
+The dataset root may carry its own `semantic-attributes.json`. When it does, the
+root container is embodied as that entity (its `entity-type` and `name` drive the
+dataset wrapper) instead of a generic table — useful when the dataset *is* a
+single top-level thing (e.g. a goal whose milestones are its children).
+
+```
+dataset/
+├── visual-language.json
+├── semantic-attributes.json    {"entity-type": "goal", "name": "Reach 10k users"}
+├── 001_m-01/ ...
+└── 002_m-02/ ...
+```
+
+## Path identity
+
+A container's identity is its **full path**, not its name. `group-a/done` and
+`group-b/done` are two distinct containers. Internally each node is keyed by a
+dotted path (`root.group-a.done`), and depth is the number of path segments
+below the root.
+
+<Note>
+**Depth matters.** [`hierarchy_levels`](/datasets/visual-language-json#hierarchy-levels)
+is indexed by depth: the first entry configures depth-1 folders (direct children
+of the root), the second configures depth-2, and so on.
+</Note>
+
+## Entity-containers
+
+A folder can be **both** a record and a container — it has a
+`raw-attributes.json` *and* child folders. The battery represents it once: it
+renders as its own entity (its semantic type wins) while still nesting its
+children.
+
+```
+dataset/
+└── 002_m-02/                   ← entity-container: a milestone…
+    ├── raw-attributes.json     ← …that is itself a record…
+    ├── semantic-attributes.json
+    └── 001_en-01/              ← …and contains enablers
+        └── raw-attributes.json
+```
+
+## Defaults & partial specs
+
+Every file except a leaf's `raw-attributes.json` is optional. Missing pieces
+fall back to sensible defaults (entity-type → `name`, no `visual-language.json`
+→ everything renders with default objects, no `connections` → no roads). The
+battery logs which defaults it inferred so you can see what a partial spec
+produced.
+
+## Next
+
+<Card title="visual-language.json reference" icon="file-code" href="/datasets/visual-language-json">
+  Configure embodiment, layout, detail panels, and roads.
+</Card>

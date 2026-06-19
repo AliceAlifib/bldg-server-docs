@@ -1,0 +1,256 @@
+---
+title: visual-language.json
+description: The single configuration file that describes a dataset's visualization
+---
+
+# `visual-language.json`
+
+One file at the dataset root describes the whole visualization: how entity types
+are embodied, how levels are laid out, how attributes become colors and panels,
+and how records are connected by roads.
+
+<Info>
+**Not to be confused with the protocol's `visual_language` field.** This config
+file is the high-level, dataset-wide spec the file-system battery reads. It
+*compiles down* to the bldg-server's per-container
+[`visual_language`](/concepts/visual-language) (the `entity_type → 3d_object`
+map) plus `/create`, `/relocate`, and `/connect` commands.
+</Info>
+
+## Top-level shape
+
+```json
+{
+  "entity_types": { "<semantic-type>": "<3d-object>" },
+  "root_entity_type": "goal",
+  "container_entity_type": "name",
+  "attribute_visual_mappings": {
+    "<source-attr>-><visual-attr>": { "<value>": "<visual-value>" }
+  },
+  "hierarchy_levels": [ /* one entry per depth */ ],
+  "connections": [ /* road rules */ ]
+}
+```
+
+Every key is optional. The minimal useful config is just `entity_types`.
+
+---
+
+## `entity_types`
+
+Maps each semantic `entity-type` (from your records'
+`semantic-attributes.json`) to a **3D object** the client knows how to render.
+The object names come from the bldg-server's
+[visual language](/concepts/visual-language) (e.g. `name`, `label`, `purpose`,
+`heading`, and composite types).
+
+```json
+"entity_types": {
+  "milestone": "milestone",
+  "enabler": "enabler",
+  "passenger": "person"
+}
+```
+
+If a record's `entity-type` isn't listed, it's used verbatim as the object name.
+If a record has no `entity-type` at all, it defaults to `name` (a street sign).
+
+## `root_entity_type` / `container_entity_type`
+
+Fallback embodiments for the dataset wrapper and for intermediate container
+folders that don't otherwise specify a type.
+
+| Key | Default | Used for |
+|---|---|---|
+| `root_entity_type` | `goal` | The dataset's root container |
+| `container_entity_type` | `name` | Container folders with no level-specific type |
+
+Both default to objects that render out of the box with the built-in visual
+language.
+
+## `attribute_visual_mappings`
+
+Turn an attribute **value** into a **visual attribute** (color, state, …). The
+key is `"<source-attr>-><visual-attr>"`; the value maps source values to visual
+values.
+
+```json
+"attribute_visual_mappings": {
+  "status->color": {
+    "done": "green",
+    "in_progress": "yellow",
+    "blocked": "red"
+  },
+  "survived->color": { "1": "green", "0": "red" }
+}
+```
+
+Mappings apply to any record (or container) that has the source attribute.
+Iteration order is preserved, so list more specific mappings after general ones —
+later keys win. A record's own `visual-attributes.json` overrides anything
+derived here.
+
+---
+
+## `hierarchy_levels`
+
+An array configuring each **depth** of the folder tree. Index `0` configures
+depth-1 folders (direct children of the root), index `1` configures depth-2, and
+so on. Folders deeper than the array fall back to defaults.
+
+Each entry accepts:
+
+| Key | Type | Purpose |
+|---|---|---|
+| `entity_type` | string | Embodiment for containers at this depth (overridden by an entity-container's own type) |
+| `bldg_type` | `"container_bldg"` \| `"container_flr"` | Whether this level is a nested building or a *floor* of its parent |
+| `staging_flr` | string | Temporary floor records are created on before relocation |
+| `child_floor_mapping` | object | For `container_flr`: which child folder name lands on which floor |
+| `bldg_width` | integer | Spacing per building in flow/strategy layouts |
+| `layout` | object | A named [layout strategy](/datasets/layouts) + its params |
+| `flatten_to_root` | boolean | Promote this level's records to the root floor for layout (see [layouts](/datasets/layouts#flatten-to-root)) |
+| `detail_bldgs` | array | [Attribute panels](#detail-bldgs) rendered inside each record |
+| `attach_raw_data` | boolean | [Attach](#attach-raw-data) each record's `raw-attributes.json` to its `data` field |
+
+```json
+"hierarchy_levels": [
+  {
+    "bldg_width": 10,
+    "layout": { "strategy": "fishbone-spine", "spine_length": 80, "min_step": 14 },
+    "detail_bldgs": [
+      { "source": "category", "object": "label", "x": 4, "y": 3 }
+    ],
+    "attach_raw_data": true
+  },
+  {
+    "bldg_width": 5,
+    "layout": { "strategy": "fishbone-branch", "step": 2, "step_y": 2 },
+    "flatten_to_root": true,
+    "detail_bldgs": [ { "source": "name", "object": "name", "x": 0, "y": -1 } ]
+  }
+]
+```
+
+See **[Layout strategies](/datasets/layouts)** for `layout`, `bldg_type`,
+`child_floor_mapping`, and `flatten_to_root` in depth.
+
+---
+
+## `detail_bldgs`
+
+Render selected attributes of a record as small buildings placed **inside** that
+record's building — for example a category flag, a description whiteboard, or a
+metric sign next to a milestone. Set per hierarchy level.
+
+```json
+"detail_bldgs": [
+  { "source": "category", "object": "label", "x": 4, "y": 3 },
+  { "source": "description", "object": "purpose", "format": "{source}: {value}" }
+]
+```
+
+Each spec:
+
+| Field | Required | Purpose |
+|---|---|---|
+| `source` | yes | Attribute to read. Looked up in `semantic-attributes.json`, then `raw-attributes.json`; the special values `name`/`summary` fall back to the record's display name. |
+| `object` | yes | 3D object for the panel (`name`, `label`, `purpose`, `construction`, `heading`, …) |
+| `x`, `y` | no | Tile position on the record's floor (auto-stacked if omitted) |
+| `flr` | no | Floor inside the record (default `l0`) |
+| `format` | no | Text template, default `"{value}"`. Use `"{source}: {value}"` for `metric: 3000`-style labels |
+| `variant`, `color` | no | Passed through to the panel building |
+
+A spec is **skipped when its value is empty**, so partial records just render
+fewer panels.
+
+## `attach_raw_data`
+
+When `true` on a level, each record's full `raw-attributes.json` is stored on the
+building's editable `data` field (as compact JSON), so clients and tools can read
+the original record back from the scene.
+
+```json
+{ "attach_raw_data": true }
+```
+
+<Note>
+The protocol's `/create` has no inline `data` parameter, so the battery sets it
+with a follow-up `/edit <name> data <json>` once the building exists. This is
+handled for you.
+</Note>
+
+---
+
+## `connections`
+
+Draw [roads](/concepts/roads) between related records. Each rule matches records
+by their **semantic entity-type** and connects them per a topology.
+
+```json
+"connections": [
+  { "between": "milestone", "and": "milestone", "class": "highway", "topology": "sibling-sequence" },
+  { "between": "milestone", "and": "enabler",   "class": "lane",    "topology": "parent-children-chain" }
+]
+```
+
+| Field | Required | Purpose |
+|---|---|---|
+| `between` | yes | Entity-type of the source records |
+| `and` | yes | Entity-type of the target records |
+| `topology` | no (default `pair`) | How matches are connected — see below |
+| `class` | no (default `road`) | `highway` \| `road` \| `lane` \| `path` |
+| `color` | no | Road color |
+| `order_by` | no | Attribute that defines chain order (default: folder name) |
+
+### Topologies
+
+| Topology | Connects |
+|---|---|
+| `pair` | Every `between` record to every `and` record (cross-product) |
+| `parent-children-chain` | Each `between` record → its `and`-type children, chained in order |
+| `sibling-sequence` | Same-type siblings under each parent, chained consecutively |
+
+<Tip>
+`parent-children-chain` already chains `parent → child₁ → child₂ → …`, so you
+don't also need a `sibling-sequence` over the same children — that would draw
+each segment twice.
+</Tip>
+
+## Full example
+
+```json visual-language.json
+{
+  "entity_types": { "goal": "goal", "milestone": "milestone", "enabler": "enabler" },
+  "root_entity_type": "goal",
+  "attribute_visual_mappings": {
+    "status->color": { "done": "green", "in_progress": "yellow", "blocked": "red" }
+  },
+  "hierarchy_levels": [
+    {
+      "bldg_width": 10,
+      "layout": { "strategy": "fishbone-spine", "spine_length": 80, "min_step": 14, "spine_top": 30 },
+      "detail_bldgs": [
+        { "source": "category", "object": "label", "x": 4, "y": 3 },
+        { "source": "description", "object": "purpose", "format": "{source}: {value}" }
+      ],
+      "attach_raw_data": true
+    },
+    {
+      "bldg_width": 5,
+      "layout": { "strategy": "fishbone-branch", "step": 2, "step_y": 2, "y_direction": 1, "fold_after": 5 },
+      "flatten_to_root": true,
+      "detail_bldgs": [ { "source": "name", "object": "name", "x": 0, "y": -1 } ]
+    }
+  ],
+  "connections": [
+    { "between": "milestone", "and": "milestone", "class": "highway", "topology": "sibling-sequence" },
+    { "between": "milestone", "and": "enabler",   "class": "lane",    "topology": "parent-children-chain" }
+  ]
+}
+```
+
+## Next
+
+<Card title="Layout strategies" icon="diagram-project" href="/datasets/layouts">
+  Spine, branch, flatten-to-root, container floors, and flow layouts.
+</Card>

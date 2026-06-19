@@ -8,9 +8,17 @@
     "dark": "#1E40AF"
   },
   "navigation": [
-    { "group": "Getting Started", "pages": ["introduction"] },
+    { "group": "Get Started", "pages": ["introduction", "datasets/overview", "datasets/quickstart"] },
     {
-      "group": "Concepts",
+      "group": "Visualize Datasets",
+      "pages": [
+        "datasets/folder-structure",
+        "datasets/visual-language-json",
+        "datasets/layouts"
+      ]
+    },
+    {
+      "group": "Protocol — Concepts",
       "pages": [
         "concepts/buildings",
         "concepts/residents",
